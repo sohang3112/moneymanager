@@ -1,3 +1,5 @@
+*.mmbak
+
 .mypy_cache/
 
 # Python-generated files

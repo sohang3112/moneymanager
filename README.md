@@ -1,0 +1,1 @@
+Read Sqlite *.mmbak* database (Google Drive backup files in *Money Manager* folder)
