@@ -1,0 +1,10 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "MoneyManager",
+            "database": "${workspaceFolder:moneymanager}/MMAuto[GF260112](12-01-26-090617).mmbak"
+        }
+    ]
+}

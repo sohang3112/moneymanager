@@ -1,0 +1,23 @@
+{
+  "name": "moneymanager",
+  "version": "1.0.0",
+  "description": "Web UI for Money Manager android app",
+  "homepage": "https://github.com/sohang3112/MoneyManager#readme",
+  "bugs": {
+    "url": "https://github.com/sohang3112/MoneyManager/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sohang3112/MoneyManager.git"
+  },
+  "license": "ISC",
+  "author": "Sohang Chopra <sohangchopra@gmail.com>",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "sql.js": "1.13.0"
+  }
+}
