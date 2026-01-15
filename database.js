@@ -1,5 +1,5 @@
 const sqliteConfig = {
-    locateFile: filename => `node_modules/sql.js/dist/${filename}` // sql-wasm.wasm
+    locateFile: filename => `sql.js_1.13/dist/${filename}` // sql-wasm.wasm
 };
 const transactionsQuery = `
 select datetime(t.UTIME / 1000, 'unixepoch') as dt,
