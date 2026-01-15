@@ -14,8 +14,13 @@
     </style>
 </head>
 
-<body onload="main()">
+<body onload="main()"">
     
+<label>
+    Upload Money Manager .mmbak file
+    <input type="file" accept=".mmbak" oninput="if (this.files) { initDatabase(this.files[0]) }" />
+</label>
+
 <table id="transactions"></table>
 
 <script src="node_modules/sql.js/dist/sql-wasm.js"></script>

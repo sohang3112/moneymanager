@@ -39,9 +39,8 @@ order by t.UTIME desc
 const amountColours = {Income: 'blue', Expense: 'red', Transfer: 'black'};
 const transactionsElem = document.getElementById('transactions');
 
-async function sqliteDatabase(SQL, path) {
-    const fetched = await fetch(path);
-    const buf = await fetched.arrayBuffer();
+async function sqliteDatabase(file) {
+    const buf = await file.arrayBuffer();
     return new SQL.Database(new Uint8Array(buf));
 }
 
@@ -92,13 +91,13 @@ function displayTransactions(db) {
         const row = Object.fromEntries(zip(columns, rarray));
         ans += `
             <tr class="transaction-head"> 
-                <td rowspan="${row.subcategory == null ? 2 : 1}">${row.category}</td> 
-                ${row.name == '' ? `<td rowspan="2">${row.asset}</td>` : `<td style="color: black">${row.name}</td>` } 
+                <td rowspan="${row.subcategory === null ? 2 : 1}">${row.category}</td> 
+                ${row.name === '' ? `<td rowspan="2">${row.asset}</td>` : `<td style="color: black">${row.name}</td>` } 
                 <td style="color: ${amountColours[row.type]}">${row.amount}</td> 
             </tr>
             <tr class="transaction-foot"> 
-                ${row.subcategory == null ? '' : `<td style="font-size: smaller">${row.subcategory}</td>`} 
-                ${row.name == '' ? '' : `<td>${row.asset}</td>`} 
+                ${row.subcategory === null ? '' : `<td style="font-size: smaller">${row.subcategory}</td>`} 
+                ${row.name === '' ? '' : `<td>${row.asset}</td>`} 
                 <td></td> 
             </tr>
         `;
@@ -106,8 +105,14 @@ function displayTransactions(db) {
     transactionsElem.innerHTML = ans;
 }
 
-async function main() {
-    const SQL = await initSqlJs(sqliteConfig);
-    const db = await sqliteDatabase(SQL, "MMAuto[GF260112](12-01-26-090617).mmbak");
+async function initDatabase(file) {
+    window.db = await sqliteDatabase(file);
     displayTransactions(db);
+}
+
+async function main() {
+    window.SQL = await initSqlJs(sqliteConfig);
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
+        await initDatabase(await fetch("MMAuto[GF260112](12-01-26-090617).mmbak"));
+    }
 }
