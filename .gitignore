@@ -1,2 +1,2 @@
 *.mmbak
-node_modules/
+# include node_modules/ for sql.js dist/ folder
