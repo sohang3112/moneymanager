@@ -1,12 +1,8 @@
-Read Sqlite *.mmbak* database (Google Drive backup files in *Money Manager* folder)
+# Money Manager
 
-https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat#date-time_component_options
+Web UI for [Money Manager app](https://www.realbyteapps.com/) which is supported on Android, iOS but not laptops / web.
+Currently read-only interface, aim to add editing capability later.
 
-weekday: "short"       # "long" | "short" | "narrow"
-year: "numeric"        # "numeric" | "2-digit"
-month: "2-digit"       # "numeric" | "2-digit" | "long" | "short" | "narrow"
-day: "2-digit"         # "numeric" | "2-digit"
+Works by reading *.mmbak* files (which are actually Sqlite databases) that are periodically backed up by the app to "Money Manager" folder in Google Drive.
 
-hourCycle: "h24"       # "h11" | "h12" | "h23" | "h24"
-hour: "2-digit"        # "numeric" | "2-digit"
-minute: "2-digit"      # "numeric" | "2-digit"
+Use it online at https://sohang3112.github.io/moneymanager .
