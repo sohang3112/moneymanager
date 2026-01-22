@@ -37,10 +37,11 @@ function zip(array1, array2) {    // ASSUMPTION: equal-length arrays
     return array1.map((x, index) => [x, array2[index]])
 }
 
-/** 
+/** Generator Function: in sorted array, group by a function that gives some property of elements, and yield [property, group] .
  * 
- * @param {array} array 
- * @param {string} field
+ * @param {array} array - Input array.
+ * @param {function} func - Function to get some property of array elements. Example: (elem) => elem.someProperty .
+ * @yields {array} - [property, group] where property is common in group (output of func(elem)), and group is an array of group elements (in same order as input array) .
 */
 function* groupByInSortedArray(array, func) {
     let i = 0;

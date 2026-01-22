@@ -78,12 +78,12 @@ function dbQueryResultToRows({columns, values}) {
 }
 
 function displayTransactions(db, monthNum, year) {
-    const amountTableCell = (type, amount) => `<td style="color: ${amountColours[type]}">${currency} ${amount}</td>`;
+    const amountTableCell = (type, amount) => `<td style="color: ${amountColours[type]}">${currency} ${amount.toFixed(2)}</td>`;
     const query = transactionsQuery(monthNum, year);
-    console.log(query);
     const queryTable = db.exec(query)[0];
-    console.log(queryTable);
     const rows = dbQueryResultToRows(queryTable);    // [0] since single query result table only
+
+    // add property formattedDate, to be used for display and sorting
     for (const row of rows) row.formattedDate = dateFormat.format(new Date(row.dt));
 
     let ans = '';
@@ -96,8 +96,8 @@ function displayTransactions(db, monthNum, year) {
         ans += `
             <tr class="transaction-date"> 
                 <td>${dateString}</td> 
-                ${amountTableCell("Expense", dateExpenses)}
                 ${amountTableCell("Income", dateIncome)}
+                ${amountTableCell("Expense", dateExpenses)}
             </tr>
         `;
         for (const row of dateRows) {
