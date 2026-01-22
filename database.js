@@ -1,8 +1,8 @@
 const sqliteConfig = {
     locateFile: filename => `sql.js_1.13/dist/${filename}` // sql-wasm.wasm
 };
-const currency = '₹';       // TODO: use currency column fetched in query instead of hardcoding
 const amountColours = {Income: 'blue', Expense: 'red', Transfer: 'black'};
+let SQL, db, transactions;
 
 async function sqliteDatabase(file) {
     const buf = await file.arrayBuffer();
@@ -35,13 +35,13 @@ function dbQueryResultsToTables(contents) {
 }
 
 async function initDatabase(file) {
-    const today = new Date();
-    const db = await sqliteDatabase(file);
-    new Transactions().displayDailyTab(db, today.getMonth() + 1, today.getFullYear());
+    db = await sqliteDatabase(file);      // const since read-only right now (not running any db update/insert)
+    transactions.displayDailyTab();
 }
 
 async function main() {
-    window.SQL = await initSqlJs(sqliteConfig);
+    SQL = await initSqlJs(sqliteConfig);
+    transactions = new Transactions();
     if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") {
         await initDatabase(await fetch("MMAuto[GF260112](12-01-26-090617).mmbak"));
     }
@@ -49,15 +49,28 @@ async function main() {
 
 
 class Transactions {
+    // NOTE: Passing undefined as locale (first parameter) so that it uses user's default locale - eg. 'en-IN'
+
+    // TODO: use currency fetched from table instead of hardcoding
+    static currencyFormat = new Intl.NumberFormat(undefined, {style: 'currency', currency: 'INR'});
+
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat#date-time_component_options
-    static dateFormat = new Intl.DateTimeFormat("en-IN", {day:"2-digit", month:"2-digit", year:"numeric", weekday:"short"});  // example: Wed, 31/12/2000
+    static monthFormat = new Intl.DateTimeFormat(undefined, {month:"short", year:"numeric"});    // example: Jan 2026
+    static dayFormat = new Intl.DateTimeFormat(undefined, {day:"2-digit", month:"2-digit", year:"numeric", weekday:"short"});  // example: Wed, 31/12/2000
     // Other useful datetime options:
     // hourCycle: "h24"       // "h11" | "h12" | "h23" | "h24"
     // hour: "2-digit"        // "numeric" | "2-digit"
     // minute: "2-digit"      // "numeric" | "2-digit"
 
     constructor() {
-        this.elem = document.getElementById('transactions');
+        this.transactionsElem = document.getElementById('transactions');
+        this.monthElem = document.getElementById('month');
+        this.monthDate = new Date();   // today; we only need month,year but storing full date object for convinience
+    }
+
+    addMonth(months) {
+        this.monthDate.setMonth(this.monthDate.getMonth() + months);
+        this.displayDailyTab();
     }
 
     /** SQL query to fetch all transactions in given month, date.
@@ -69,30 +82,31 @@ class Transactions {
     static sqlQueryDailyTab(monthNumber, year) {
         const monthNumStr = new String(monthNumber).padStart(2,'0');  // eg. '01' for January
         return `
-            select datetime(t.UTIME / 1000, 'unixepoch') as dt,
+            select 
+                datetime(t.UTIME / 1000, 'unixepoch') as dt,
                 case
-                        when t.ctgUid is null then 'Transfer'
-                        when t.ctgUid like '-%' or subcategory.TYPE = 1 then 'Expense'   -- (Modified Balance) ctgUid negative (seems to be -4 only)
-                        when subcategory.TYPE = 0 then 'Income' 
+                    when t.ctgUid is null then 'Transfer'
+                    when t.ctgUid like '-%' or subcategory.TYPE = 1 then 'Expense'   -- (Modified Balance) ctgUid negative (seems to be -4 only)
+                    when subcategory.TYPE = 0 then 'Income' 
                 end as type,
                 case 
-                        when t.ctgUid is null then 'Transfer'
-                        when t.ctgUid like '-%' then 'Modified Balance'    -- ctgUid negative (seems to be -4 only)
-                        when category.NAME is null then subcategory.NAME 
-                        else category.NAME
-                    end as category,
-                    case
-                        when category.NAME is null then null
-                        else subcategory.NAME
-                    end as subcategory,
-                    c.SYMBOL as currency,
-                    t.AMOUNT_ACCOUNT as amount,
-                    case
-                        when t.ctgUid is null then printf('%s -> %s', assets.NIC_NAME, toAssets.NIC_NAME)
-                        else assets.NIC_NAME 
-                    end as asset,
-                    t.ZCONTENT as name, 
-                    t.ZDATA as description
+                    when t.ctgUid is null then 'Transfer'
+                    when t.ctgUid like '-%' then 'Modified Balance'    -- ctgUid negative (seems to be -4 only)
+                    when category.NAME is null then subcategory.NAME 
+                    else category.NAME
+                end as category,
+                case
+                    when category.NAME is null then null
+                    else subcategory.NAME
+                end as subcategory,
+                c.SYMBOL as currency,
+                t.AMOUNT_ACCOUNT as amount,
+                case
+                    when t.ctgUid is null then printf('%s -> %s', assets.NIC_NAME, toAssets.NIC_NAME)
+                    else assets.NIC_NAME 
+                end as asset,
+                t.ZCONTENT as name, 
+                t.ZDATA as description
             from INOUTCOME t
             left join ZCATEGORY subcategory on subcategory.uid = t.ctgUid
             left join ZCATEGORY category on category.uid = subcategory.pUid
@@ -107,21 +121,27 @@ class Transactions {
         `;
     }
 
-    /** Display all transactions in given month, date.
-     * 
-     * @param {number} monthNumber - 1-based month number in year.
-     * @param {number} year - Year number (eg. 2026).
-     */
-    displayDailyTab(db, monthNumber, year) {
-        const amountTableCell = (type, amount) => `<td style="color: ${amountColours[type]}">${currency} ${amount.toFixed(2)}</td>`;
-        const query = Transactions.sqlQueryDailyTab(monthNumber, year);
-        const queryTable = db.exec(query)[0];
-        const rows = dbQueryResultToRows(queryTable);    // [0] since single query result table only
+    /** Display all transactions in current month. */
+    displayDailyTab() {
+        this.monthElem.innerText = Transactions.monthFormat.format(this.monthDate);        
+
+        /////////// Fill Transactions Table /////////////////
+
+        const amountTableCell = (type, amount) => `<td style="color: ${amountColours[type]}">${Transactions.currencyFormat.format(amount)}</td>`;
+        const query = Transactions.sqlQueryDailyTab(this.monthDate.getMonth() + 1, this.monthDate.getFullYear());
+        const tables = db.exec(query);
+        if (tables.length === 0) {
+            console.log('No transactions found for ' + Transactions.monthFormat.format(this.monthDate));
+            this.transactionsElem.innerHTML = '';
+            return;
+        }
+        const rows = dbQueryResultToRows(tables[0]);    // [0] since single query result table only
 
         // add property formattedDate, to be used for display and sorting
-        for (const row of rows) row.formattedDate = Transactions.dateFormat.format(new Date(row.dt));
+        for (const row of rows) row.formattedDate = Transactions.dayFormat.format(new Date(row.dt));
 
-        let ans = '<table>';
+        let ans = '';
+        ans += '<table>';
         for (let [dateString, dateRows] of groupByInSortedArray(rows, r => r.formattedDate)) {
             // total expenses & income for current date
             const dateExpenses = sum(dateRows.filter(r => r.type == "Expense").map(r => r.amount));
@@ -152,6 +172,6 @@ class Transactions {
             ans += `</tbody>`;
         }
         ans += '</table>';
-        this.elem.innerHTML = ans;
+        this.transactionsElem.innerHTML = ans;
     }
 }

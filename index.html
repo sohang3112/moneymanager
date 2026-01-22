@@ -22,6 +22,12 @@
     <input type="file" accept=".mmbak" oninput="if (this.files) { initDatabase(this.files[0]) }" />
 </label>
 
+<nav>
+    <button onclick="transactions.addMonth(-1)">&lt;</button>
+    <span id="month"></span>
+    <button onclick="transactions.addMonth(+1)">&gt;</button>
+</nav>
+
 <ul class="nav nav-tabs" role="tablist">
   <li class="nav-item">
     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">
