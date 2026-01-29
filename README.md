@@ -9,7 +9,4 @@ Use it online at https://sohang3112.github.io/moneymanager .
 
 ## Development Tools
 
-### VS Code Extensions
-
-- [SQLTools (connections to various databases)](https://marketplace.visualstudio.com/items?itemName=mtxr.sqltools) and 
-  [SQLTools SQLite Driver](https://marketplace.visualstudio.com/items?itemName=mtxr.sqltools-driver-sqlite)
+VS Code Extensions at *.vscode/extensions.json* should be automatically recommended when repo is cloned. 
