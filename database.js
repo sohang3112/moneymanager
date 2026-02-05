@@ -73,14 +73,11 @@ class Transactions {
         this.displayDailyTab();
     }
 
-    /** SQL query to fetch all transactions in given month, date.
+    /** SQL query to fetch all transactions satisfying given SQL condition.
      * 
-     * @param {number} monthNumber - 1-based month number in year.
-     * @param {number} year - Year number (eg. 2026).
-     * @returns {string} - SQL query for Sqlite database.
+     * @param {string} sqlCondition - filter with given condition by putting it in WHERE clause of SELECT statement
      */
-    static sqlQueryDailyTab(monthNumber, year) {
-        const monthNumStr = new String(monthNumber).padStart(2,'0');  // eg. '01' for January
+    static sqlQuery(sqlCondition) {
         return `
             select 
                 datetime(t.UTIME / 1000, 'unixepoch') as dt,
@@ -116,26 +113,29 @@ class Transactions {
             where t.IS_DEL = 0         -- not deleted
                 and t.DO_TYPE != 4   -- not Transfer (from) [because its> duplicate Transfer (to) entry is already present]
                 and t.ctgUid != ''   -- exclude Modified Balance entries where selected not to save as income/expense
-                and t.WDATE like '${year}-${monthNumStr}-%'
+                and ${sqlCondition}
             order by t.UTIME desc
         `;
     }
 
-    /** Display all transactions in current month. */
-    displayDailyTab() {
-        this.monthElem.innerText = Transactions.monthFormat.format(this.monthDate);        
+    /** SQL Query to fetch all transactions of given month, year.
+     * 
+     * @param {number} monthNumber - Month number (1-12).
+     * @param {number} year - Year number (4 digits).
+     * @returns {string} - SQL Query.
+     */
+    static sqlQueryDailyTab(monthNumber, year) {
+        const monthNumStr = new String(monthNumber).padStart(2,'0');  // eg. '01' for January
+        return Transactions.sqlQuery(`t.WDATE like '${year}-${monthNumStr}-%'`);
+    }
 
-        /////////// Fill Transactions Table /////////////////
-
+    /** Returns table HTML for given transaction rows (fetched via SQL query)
+     * 
+     * @param {array} rows - Array of fetched query rows of a single table. Each row object's attributes correspond to column names in query, and cell values are object values.
+     * @returns {string} - HTML string of rendered table.
+    */
+    static renderTable(rows) {
         const amountTableCell = (type, amount) => `<td style="color: ${amountColours[type]}">${Transactions.currencyFormat.format(amount)}</td>`;
-        const query = Transactions.sqlQueryDailyTab(this.monthDate.getMonth() + 1, this.monthDate.getFullYear());
-        const tables = db.exec(query);
-        if (tables.length === 0) {
-            console.log('No transactions found for ' + Transactions.monthFormat.format(this.monthDate));
-            this.transactionsElem.innerHTML = '';
-            return;
-        }
-        const rows = dbQueryResultToRows(tables[0]);    // [0] since single query result table only
 
         // add property formattedDate, to be used for display and sorting
         for (const row of rows) row.formattedDate = Transactions.dayFormat.format(new Date(row.dt));
@@ -172,6 +172,31 @@ class Transactions {
             ans += `</tbody>`;
         }
         ans += '</table>';
-        this.transactionsElem.innerHTML = ans;
+        return ans;
+    }
+
+    /** Display all transactions in current month. */
+    displayDailyTab() {
+        this.monthElem.innerText = Transactions.monthFormat.format(this.monthDate);        
+
+        /////////// Fill Transactions Table /////////////////
+
+        const query = Transactions.sqlQueryDailyTab(this.monthDate.getMonth() + 1, this.monthDate.getFullYear());
+        const tables = db.exec(query);
+        if (tables.length === 0) {
+            console.log('No transactions found for ' + Transactions.monthFormat.format(this.monthDate));
+            this.transactionsElem.innerHTML = '';
+            return;
+        }
+        const rows = dbQueryResultToRows(tables[0]);    // [0] since single query result table only
+        this.transactionsElem.innerHTML = Transactions.renderTable(rows);
+    }
+}
+
+
+class Search {
+    // TODO: implement
+    constructor() {
+
     }
 }
